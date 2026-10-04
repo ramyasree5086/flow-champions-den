@@ -72,9 +72,15 @@ export const updateTask = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { id, ...fields } = data;
+    const update: Record<string, string | null> = {
+      updated_at: new Date().toISOString(),
+    };
+    for (const [key, value] of Object.entries(fields)) {
+      if (value !== undefined) update[key] = value;
+    }
     const { error } = await context.supabase
       .from("tasks")
-      .update({ ...fields, updated_at: new Date().toISOString() })
+      .update(update)
       .eq("id", id)
       .eq("user_id", context.userId);
     if (error) throw new Error(error.message);
