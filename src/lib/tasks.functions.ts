@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import type { TablesUpdate } from "@/integrations/supabase/types";
 
 const prioritySchema = z.enum(["low", "medium", "high"]);
 const statusSchema = z.enum(["todo", "in_progress", "completed"]);
@@ -72,12 +73,12 @@ export const updateTask = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { id, ...fields } = data;
-    const update: Record<string, string | null> = {
-      updated_at: new Date().toISOString(),
-    };
-    for (const [key, value] of Object.entries(fields)) {
-      if (value !== undefined) update[key] = value;
-    }
+    const update: TablesUpdate<"tasks"> = { updated_at: new Date().toISOString() };
+    if (fields.title !== undefined) update.title = fields.title;
+    if (fields.description !== undefined) update.description = fields.description;
+    if (fields.priority !== undefined) update.priority = fields.priority;
+    if (fields.status !== undefined) update.status = fields.status;
+    if (fields.due_date !== undefined) update.due_date = fields.due_date;
     const { error } = await context.supabase
       .from("tasks")
       .update(update)
