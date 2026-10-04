@@ -3,10 +3,12 @@ node_modules
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+*.log
 
 # Version control & tooling
 .git
 .gitignore
+.github
 .vscode
 .idea
 .lovable
@@ -14,15 +16,21 @@ yarn-error.log*
 # Build outputs & caches
 .output
 dist
+.tanstack
 .wrangler
+.nitro
+coverage
 
 # Environment variables & secrets
 .env
 .env.*
+**/.env
+**/.env.*
+.dev.vars
+**/.dev.vars
 *.local
 
 # Tests and documentation
-coverage
 vitest.config.ts
 README.md
 AGENTS.md
