@@ -31,3 +31,14 @@ jobs:
 
       - name: Build
         run: npm run build
+
+      - name: Build Docker image
+        env:
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+        run: |
+          docker build \
+            --tag taskflow:latest \
+            --build-arg VITE_SUPABASE_URL="$VITE_SUPABASE_URL" \
+            --secret id=supabase_publishable_key,env=VITE_SUPABASE_PUBLISHABLE_KEY \
+            .
