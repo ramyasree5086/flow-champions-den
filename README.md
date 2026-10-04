@@ -1,14 +1,37 @@
-# Welcome to your Lovable project
+# TaskFlow Hub
+
+TaskFlow – DevOps Project
+
+Project idea:
+A web application where users can create, update, delete, and track their tasks.
+
+👩‍💻 Core features
+
+User registration/login
+
+Create a task
+
+Set task priority — Low / Medium / High
+
+Set due date
+
+Update task status — To Do / In Progress / Completed
+
+Edit/delete tasks
+
+Filter tasks by status or priority
+
+Dashboard showing task statistics
 
 This project was built with [Lovable](https://lovable.dev).
 
 ## Build with Lovable
 
-Open your project in the [Lovable editor](https://lovable.dev) and keep building.
+Continue developing this project in the [Lovable editor](https://lovable.dev/projects/e62656e8-8d3c-4347-8f87-aeb5c40806d3).
 
 - **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: connect the project to GitHub and every change made in Lovable is committed straight to your repository.
-- **Full ownership**: this code is yours. Push to your repository and your changes sync back into Lovable, ready for your next prompt.
+- **Stay in sync**: every change made in Lovable is committed straight to this repository.
+- **Full ownership**: this code is yours. Push to `main` on GitHub and your changes sync back into Lovable, ready for your next prompt.
 
 ## Development
 
@@ -20,10 +43,3 @@ cd <repository-name>
 npm i
 npm run dev
 ```
-
-## Built with
-
-- TanStack Start
-- TypeScript
-- React
-- Tailwind CSS
