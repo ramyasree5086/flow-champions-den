@@ -9,9 +9,15 @@ export const Route = createFileRoute("/auth")({
   head: () => ({
     meta: [
       { title: "Sign in — TaskFlow" },
-      { name: "description", content: "Sign in or create your TaskFlow account to manage your tasks." },
+      {
+        name: "description",
+        content: "Sign in or create your TaskFlow account to manage your tasks.",
+      },
       { property: "og:title", content: "Sign in — TaskFlow" },
-      { property: "og:description", content: "Sign in or create your TaskFlow account to manage your tasks." },
+      {
+        property: "og:description",
+        content: "Sign in or create your TaskFlow account to manage your tasks.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],

@@ -18,7 +18,10 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
     meta: [
       { title: "Dashboard — TaskFlow" },
-      { name: "description", content: "Your TaskFlow board: task statistics, filters, and your full task list." },
+      {
+        name: "description",
+        content: "Your TaskFlow board: task statistics, filters, and your full task list.",
+      },
     ],
   }),
   component: Dashboard,
@@ -67,13 +70,15 @@ function formatDue(dateStr: string) {
 }
 
 function initials(name: string) {
-  return name
-    .split(" ")
-    .map((p) => p[0])
-    .filter(Boolean)
-    .slice(0, 2)
-    .join("")
-    .toUpperCase() || "?";
+  return (
+    name
+      .split(" ")
+      .map((p) => p[0])
+      .filter(Boolean)
+      .slice(0, 2)
+      .join("")
+      .toUpperCase() || "?"
+  );
 }
 
 function Dashboard() {
@@ -215,7 +220,12 @@ function Dashboard() {
         <section className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
           <StatCard label="Total" value={stats.total} sub="all tasks" delay={0} />
           <StatCard label="To do" value={stats.todo} sub="queued for pickup" delay={50} />
-          <StatCard label="In progress" value={stats.inProgress} sub="actively worked" delay={100} />
+          <StatCard
+            label="In progress"
+            value={stats.inProgress}
+            sub="actively worked"
+            delay={100}
+          />
           <StatCard
             label="Completed"
             value={stats.completed}
@@ -475,7 +485,13 @@ function EditDialog({
   async function submit(e: FormEvent) {
     e.preventDefault();
     setSaving(true);
-    await onSave({ title: title.trim(), description: description.trim(), priority, status, due_date: due || null });
+    await onSave({
+      title: title.trim(),
+      description: description.trim(),
+      priority,
+      status,
+      due_date: due || null,
+    });
     setSaving(false);
   }
 
