@@ -21,7 +21,6 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 ENV NITRO_HOST=0.0.0.0
-ENV NITRO_PORT=3000
 
 COPY --chown=node:node --from=builder /app/.output ./.output
 
