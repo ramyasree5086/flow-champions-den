@@ -1,7 +1,7 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -30,6 +30,17 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 type Task = Tables<"tasks">;
 type Priority = "low" | "medium" | "high";
 type Status = "todo" | "in_progress" | "completed";
+const GUEST_TASKS_STORAGE_KEY = "taskflow.guestTasks";
+
+function readGuestTasks(): Task[] {
+  try {
+    const stored = window.localStorage.getItem(GUEST_TASKS_STORAGE_KEY);
+    const parsed: unknown = stored ? JSON.parse(stored) : [];
+    return Array.isArray(parsed) ? (parsed as Task[]) : [];
+  } catch {
+    return [];
+  }
+}
 
 const STATUS_LABEL: Record<Status, string> = {
   todo: "To do",
@@ -82,7 +93,6 @@ function initials(name: string) {
 }
 
 function Dashboard() {
-  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const fetchTasks = useServerFn(getMyTasks);
   const fetchProfile = useServerFn(getMyProfile);
@@ -90,8 +100,37 @@ function Dashboard() {
   const updateTaskFn = useServerFn(updateTask);
   const deleteTaskFn = useServerFn(deleteTask);
 
-  const { data: tasks = [] } = useQuery({ queryKey: ["tasks"], queryFn: () => fetchTasks() });
-  const { data: profile } = useQuery({ queryKey: ["profile"], queryFn: () => fetchProfile() });
+  const [hasSession, setHasSession] = useState(false);
+  const [guestTasks, setGuestTasks] = useState<Task[]>(readGuestTasks);
+
+  useEffect(() => {
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setHasSession(Boolean(session));
+    });
+    void supabase.auth.getSession().then(({ data }) => setHasSession(Boolean(data.session)));
+    return () => authListener.subscription.unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    if (hasSession) return;
+    try {
+      window.localStorage.setItem(GUEST_TASKS_STORAGE_KEY, JSON.stringify(guestTasks));
+    } catch {
+      toast.error("Guest tasks could not be saved in this browser.");
+    }
+  }, [guestTasks, hasSession]);
+
+  const { data: remoteTasks = [] } = useQuery({
+    queryKey: ["tasks"],
+    queryFn: () => fetchTasks(),
+    enabled: hasSession,
+  });
+  const { data: profile } = useQuery({
+    queryKey: ["profile"],
+    queryFn: () => fetchProfile(),
+    enabled: hasSession,
+  });
+  const tasks = hasSession ? remoteTasks : guestTasks;
 
   const [statusFilter, setStatusFilter] = useState<"all" | Status>("all");
   const [priorityFilter, setPriorityFilter] = useState<"all" | Priority>("all");
@@ -128,6 +167,28 @@ function Dashboard() {
   async function handleAdd(e: FormEvent) {
     e.preventDefault();
     if (!newTitle.trim()) return;
+    if (!hasSession) {
+      const now = new Date().toISOString();
+      setGuestTasks((current) => [
+        {
+          id: crypto.randomUUID(),
+          user_id: "guest",
+          title: newTitle.trim(),
+          description: "",
+          priority: newPriority,
+          status: "todo",
+          due_date: newDue || null,
+          created_at: now,
+          updated_at: now,
+        },
+        ...current,
+      ]);
+      setNewTitle("");
+      setNewDue("");
+      setNewPriority("medium");
+      toast.success("Task added");
+      return;
+    }
     try {
       await createTaskFn({
         data: {
@@ -149,6 +210,20 @@ function Dashboard() {
   }
 
   async function handleCycleStatus(task: Task) {
+    if (!hasSession) {
+      setGuestTasks((current) =>
+        current.map((item) =>
+          item.id === task.id
+            ? {
+                ...item,
+                status: NEXT_STATUS[item.status as Status],
+                updated_at: new Date().toISOString(),
+              }
+            : item,
+        ),
+      );
+      return;
+    }
     try {
       await updateTaskFn({ data: { id: task.id, status: NEXT_STATUS[task.status as Status] } });
       await refresh();
@@ -158,6 +233,11 @@ function Dashboard() {
   }
 
   async function handleDelete(task: Task) {
+    if (!hasSession) {
+      setGuestTasks((current) => current.filter((item) => item.id !== task.id));
+      toast.success("Task deleted");
+      return;
+    }
     try {
       await deleteTaskFn({ data: { id: task.id } });
       await refresh();
@@ -167,14 +247,7 @@ function Dashboard() {
     }
   }
 
-  async function handleSignOut() {
-    await queryClient.cancelQueries();
-    queryClient.clear();
-    await supabase.auth.signOut();
-    navigate({ to: "/auth", replace: true });
-  }
-
-  const displayName = profile?.display_name || "there";
+  const displayName = profile?.display_name || (hasSession ? "there" : "Guest");
   const inFlight = stats.todo + stats.inProgress;
 
   return (
@@ -199,12 +272,6 @@ function Dashboard() {
               <span className="size-1.5 rounded-full bg-primary" />
               {inFlight} task{inFlight === 1 ? "" : "s"} in flight
             </div>
-            <button
-              onClick={handleSignOut}
-              className="rounded-full bg-foreground px-4 py-2 text-sm font-medium text-background ring-1 ring-border transition-colors hover:bg-foreground/90"
-            >
-              Sign out
-            </button>
             <div className="grid size-9 place-items-center rounded-full bg-primary/15 text-sm font-semibold text-primary ring-1 ring-primary/20">
               {initials(displayName)}
             </div>
@@ -417,6 +484,18 @@ function Dashboard() {
           task={editing}
           onClose={() => setEditing(null)}
           onSave={async (fields) => {
+            if (!hasSession) {
+              setGuestTasks((current) =>
+                current.map((item) =>
+                  item.id === editing.id
+                    ? { ...item, ...fields, updated_at: new Date().toISOString() }
+                    : item,
+                ),
+              );
+              setEditing(null);
+              toast.success("Task updated");
+              return;
+            }
             try {
               await updateTaskFn({ data: { id: editing.id, ...fields } });
               setEditing(null);
